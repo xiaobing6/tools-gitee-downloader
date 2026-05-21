@@ -79,12 +79,17 @@ def is_already_downloaded(save_path: Path) -> bool:
 
 def format_file_size(size_bytes: int) -> str:
     """格式化文件大小显示"""
-    if size_bytes < 1024:
-        return f"{size_bytes} B"
-    elif size_bytes < 1024 * 1024:
-        return f"{size_bytes / 1024:.1f} KB"
-    else:
-        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    if size_bytes < 0:
+        raise ValueError("size_bytes must be non-negative")
+
+    value = float(size_bytes)
+    units = ("B", "KB", "MB", "GB", "TB")
+    for unit in units:
+        if value < 1024 or unit == units[-1]:
+            if unit == "B":
+                return f"{int(value)} B"
+            return f"{value:.1f} {unit}"
+        value /= 1024
 
 
 class Logger:
@@ -262,7 +267,7 @@ class ProgressBar:
             bar_color = GRAY
 
         # 根据窗口宽度决定布局
-        # 最小行格式: "100% 2.3MB" = 约10字符
+        # 最小行格式: "100% | 2.3 MB" = 约14字符
         # 加上进度条(8~20)和空格
         if term_width <= 50:
             # 极简模式：无文件名，8格进度条，无时间
@@ -282,7 +287,7 @@ class ProgressBar:
             show_time = True
             show_speed = True
             # 文件名空间 = 总宽度 - 进度条 - 固定信息
-            # 格式: "xxx... [████████████] 100% 2.3MB 841KB/s 2.8s"
+            # 格式: "xxx... [████████████] 100% | 2.3 MB | 841.0 KB/s | 2.8s"
             fixed = 6 + bar_width + 1 + len(percent_str) + 1 + len(size_str) + 3 + len(speed_display) + 3 + len(elapsed_str)
             name_space = term_width - fixed - 8
         else:
