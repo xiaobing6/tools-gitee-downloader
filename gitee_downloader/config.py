@@ -110,8 +110,23 @@ class Config:
                 if attr_name in ("timeout", "download_timeout", "chunk_size"):
                     value = int(value)
                 elif attr_name in ("auto_extract", "auto_rename"):
-                    value = bool(value)
+                    value = self._parse_bool(value, config_key)
                 setattr(self, attr_name, value)
+
+    @staticmethod
+    def _parse_bool(value: Any, config_key: str) -> bool:
+        """解析配置中的布尔值，避免字符串 'false' 被 bool() 当成 True。"""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, int):
+            return bool(value)
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in ("true", "yes", "y", "1", "on"):
+                return True
+            if normalized in ("false", "no", "n", "0", "off"):
+                return False
+        raise ValueError(f"配置项 {config_key} 需要布尔值，当前值: {value!r}")
 
     @classmethod
     def find_config_file(cls, search_dir: Path = None) -> Optional[Path]:
