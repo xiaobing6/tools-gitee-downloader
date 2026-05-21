@@ -1,0 +1,53 @@
+name: Auto Create PR
+
+# 当 push 到非 main 分支时自动创建 PR
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Check if PR already exists
+        id: check_pr
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch}`,
+              state: 'open'
+            });
+            
+            if (prs.length > 0) {
+              console.log('PR already exists:', prs[0].html_url);
+              core.setOutput('exists', 'true');
+            } else {
+              core.setOutput('exists', 'false');
+            }
+
+      - name: Create Pull Request
+        if: steps.check_pr.outputs.exists == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            
+            const { data: pull } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Auto PR] ${branch}`,
+              head: branch,
+              base: 'main',
+              body: `## 自动创建的 Pull Request\n\n分支: \`${branch}\`\n\n请检查代码修改并进行审查。`
+            });
+            
+            console.log('✅ PR created successfully!');
+            console.log('URL:', pull.html_url);
