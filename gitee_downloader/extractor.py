@@ -1,6 +1,5 @@
 """文件解压和重命名模块"""
 
-import os
 import re
 import shutil
 import tarfile
@@ -21,6 +20,18 @@ class ArchiveExtractor:
         ".tar.bz2": "tar",
         ".tar": "tar",
     }
+
+    @staticmethod
+    def _safe_target_path(target_dir: Path, member_name: str) -> Path:
+        """返回成员解压目标路径，并确保不会逃逸出目标目录。"""
+        dest_path = target_dir / member_name
+        target_root = target_dir.resolve()
+        resolved_dest = dest_path.resolve()
+        try:
+            resolved_dest.relative_to(target_root)
+        except ValueError as exc:
+            raise ValueError(f"压缩包包含不安全路径: {member_name}") from exc
+        return dest_path
 
     @classmethod
     def get_archive_type(cls, filename: str) -> Optional[str]:
@@ -152,6 +163,8 @@ class ArchiveExtractor:
             entries = [p for p in zf.namelist() if p]
             if not entries:
                 return
+            for member in entries:
+                self._safe_target_path(target_dir, member)
 
             top_dirs = {Path(p).parts[0] for p in entries if Path(p).parts}
 
@@ -164,14 +177,23 @@ class ArchiveExtractor:
                         new_path = member[len(prefix):]
                         if new_path:
                             source = zf.read(member)
-                            dest_path = target_dir / new_path
+                            dest_path = self._safe_target_path(target_dir, new_path)
                             dest_path.parent.mkdir(parents=True, exist_ok=True)
                             with open(dest_path, "wb") as f:
                                 f.write(source)
                     else:
-                        zf.extract(member, target_dir)
+                        dest_path = self._safe_target_path(target_dir, member)
+                        if not member.endswith("/"):
+                            dest_path.parent.mkdir(parents=True, exist_ok=True)
+                            with open(dest_path, "wb") as f:
+                                f.write(zf.read(member))
             else:
-                zf.extractall(target_dir)
+                for member in entries:
+                    dest_path = self._safe_target_path(target_dir, member)
+                    if not member.endswith("/"):
+                        dest_path.parent.mkdir(parents=True, exist_ok=True)
+                        with open(dest_path, "wb") as f:
+                            f.write(zf.read(member))
 
     def _extract_tar(self, archive_path: Path, target_dir: Path) -> None:
         """解压 TAR 文件（支持 .tar.gz, .tar.bz2），自动展平单层顶层目录"""
@@ -184,23 +206,45 @@ class ArchiveExtractor:
             mode = "r"
 
         with tarfile.open(archive_path, mode) as tf:
-            members = list(tf.getmembers())
+            members = [m for m in tf.getmembers() if m.name]
             if not members:
                 return
+            for member in members:
+                self._safe_target_path(target_dir, member.name)
 
             top_dirs = {Path(m.name).parts[0] for m in members}
 
             if len(top_dirs) == 1:
                 # 有单一顶层目录，展平
-                prefix = top_dirs.pop() + os.sep
+                prefix = top_dirs.pop() + "/"
                 for member in members:
                     if member.name.startswith(prefix):
                         # 修改成员路径，去掉顶层目录
                         member.name = member.name[len(prefix):]
                     if member.name:  # 避免空路径
-                        tf.extract(member, target_dir)
+                        self._extract_tar_member(tf, member, target_dir)
             else:
-                tf.extractall(target_dir)
+                for member in members:
+                    self._extract_tar_member(tf, member, target_dir)
+
+    def _extract_tar_member(
+        self, tf: tarfile.TarFile, member: tarfile.TarInfo, target_dir: Path
+    ) -> None:
+        """安全解压单个 TAR 成员。"""
+        dest_path = self._safe_target_path(target_dir, member.name)
+        if member.isdir():
+            dest_path.mkdir(parents=True, exist_ok=True)
+            return
+        if not member.isfile():
+            return
+
+        source = tf.extractfile(member)
+        if source is None:
+            return
+
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        with source, open(dest_path, "wb") as f:
+            shutil.copyfileobj(source, f)
 
 
 class FileRenamer:
@@ -232,7 +276,7 @@ class FileRenamer:
 
             new_path = file_path.parent / new_name
             if new_path.exists():
-                print(f"{Logger.MAGENTA}⏭{Logger.RESET} {Logger.GRAY}{new_name}{Logger.RESET} {Logger.GRAY}(已存在){Logger.RESET}")
+                Logger.skipped_item(new_name)
                 continue
 
             try:
@@ -243,7 +287,7 @@ class FileRenamer:
 
         if renamed:
             print()
-            print(f"{Logger.GRAY}━━ {Logger.CYAN}✏{Logger.RESET} 文件重命名")
+            Logger.step(f"{Logger.CYAN}{Logger.ICON_RENAME}{Logger.RESET} 文件重命名")
             for old, new in renamed:
                 print(f"   {old} {Logger.GRAY}→{Logger.RESET} {Logger.CYAN}{new}{Logger.RESET}")
 
@@ -298,7 +342,7 @@ class PostProcessor:
             and target_dir
             and self.extractor.is_already_extracted(target_dir, archive_path)
         ):
-            print(f"{Logger.MAGENTA}⏭{Logger.RESET} {Logger.GRAY}{base_name}{Logger.RESET} {Logger.GRAY}(已解压){Logger.RESET}")
+            Logger.skipped_item(base_name, "已解压")
             # 即使跳过解压，也检查是否需要重命名
             self.renamer.rename_files(target_dir)
             return target_dir
@@ -308,7 +352,7 @@ class PostProcessor:
         )
 
         if extract_dir:
-            print(f"{Logger.GREEN}✔{Logger.RESET} {Logger.CYAN}{base_name}{Logger.RESET}")
+            Logger.success_item(base_name)
             self.renamer.rename_files(extract_dir)
 
         return extract_dir

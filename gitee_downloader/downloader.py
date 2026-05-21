@@ -1,7 +1,7 @@
 """下载器模块"""
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import requests
 
@@ -35,10 +35,11 @@ class FileDownloader:
             下载成功返回 True
         """
         if skip_existing and is_already_downloaded(save_path):
-            print(f"{Logger.MAGENTA}⏭{Logger.RESET} {Logger.GRAY}{save_path.name}{Logger.RESET} {Logger.GRAY}(已存在){Logger.RESET}")
+            Logger.skipped_item(save_path.name)
             return True
 
         try:
+            save_path.parent.mkdir(parents=True, exist_ok=True)
             resp = requests.get(
                 download_url,
                 headers=self._headers(),
@@ -62,7 +63,7 @@ class FileDownloader:
             progress.finish()
 
             size = save_path.stat().st_size
-            print(f"{Logger.GREEN}✔{Logger.RESET} {Logger.CYAN}{save_path.name}{Logger.RESET} {Logger.GRAY}({format_file_size(size)}){Logger.RESET}")
+            Logger.success_item(save_path.name, format_file_size(size))
             return True
 
         except requests.exceptions.RequestException as e:
@@ -99,21 +100,15 @@ class BatchDownloader:
         Returns:
             成功下载的文件路径列表
         """
-        success_count = 0
-        skipped_count = 0
         downloaded_files: List[Path] = []
 
         for task in self.tasks:
-            if is_already_downloaded(task.save_path):
-                print(f"{Logger.MAGENTA}⏭{Logger.RESET} {Logger.GRAY}{task.name}{Logger.RESET} {Logger.GRAY}(已存在){Logger.RESET}")
-                task.skipped = True
-                skipped_count += 1
-                downloaded_files.append(task.save_path)
-                continue
-
-            if self.downloader.download(task.url, task.save_path, skip_existing=False):
-                task.success = True
-                success_count += 1
+            already_downloaded = is_already_downloaded(task.save_path)
+            if self.downloader.download(task.url, task.save_path, skip_existing=True):
+                if already_downloaded:
+                    task.skipped = True
+                else:
+                    task.success = True
                 downloaded_files.append(task.save_path)
             else:
                 print()  # 失败后换行

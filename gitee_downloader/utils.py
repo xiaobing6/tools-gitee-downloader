@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import time
+import unicodedata
 from pathlib import Path
 
 
@@ -11,8 +12,8 @@ def setup_windows_encoding() -> None:
     """修复 Windows 控制台中文乱码"""
     if sys.platform == "win32":
         try:
-            sys.stdout.reconfigure(encoding="utf-8")
-            sys.stderr.reconfigure(encoding="utf-8")
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
         except Exception:
             pass
 
@@ -24,7 +25,22 @@ _ANSI_ESCAPE_RE = re.compile(r"\033\[[0-9;]*m")
 def visible_width(text: str) -> int:
     """计算字符串在终端中的可见宽度（去除 ANSI 转义码）"""
     clean = _ANSI_ESCAPE_RE.sub("", text)
-    return len(clean)
+    width = 0
+    for char in clean:
+        if unicodedata.combining(char):
+            continue
+        if unicodedata.east_asian_width(char) in ("F", "W"):
+            width += 2
+        else:
+            width += 1
+    return width
+
+
+def _char_width(char: str) -> int:
+    """计算单个字符的终端显示宽度。"""
+    if unicodedata.combining(char):
+        return 0
+    return 2 if unicodedata.east_asian_width(char) in ("F", "W") else 1
 
 
 def truncate_visible(text: str, max_width: int) -> str:
@@ -47,8 +63,11 @@ def truncate_visible(text: str, max_width: int) -> str:
                 continue
         if visible_count >= max_width:
             break
+        char_width = _char_width(text[i])
+        if visible_count + char_width > max_width:
+            break
         result.append(text[i])
-        visible_count += 1
+        visible_count += char_width
         i += 1
     return "".join(result)
 
@@ -88,51 +107,84 @@ class Logger:
     ICON_EXTRACT = "📂"    # 解压
     ICON_RENAME = "✏"     # 重命名
     ICON_SUCCESS = "✔"     # 成功
-    ICON_SKIP = "⏭"       # 跳过
+    ICON_SKIP = "-"       # 跳过
     ICON_WARN = "⚠"        # 警告
     ICON_ERROR = "✖"       # 错误
     ICON_FOLDER = "📁"     # 文件夹
 
     @staticmethod
+    def _print(message: str, file=None, end: str = "\n") -> None:
+        """安全打印，避免未初始化 UTF-8 控制台时因 emoji 输出失败。"""
+        stream = file or sys.stdout
+        try:
+            print(message, file=stream, end=end)
+        except UnicodeEncodeError:
+            encoding = getattr(stream, "encoding", None) or "utf-8"
+            safe_message = message.encode(encoding, errors="replace").decode(
+                encoding, errors="replace"
+            )
+            stream.write(safe_message + end)
+            stream.flush()
+
+    @staticmethod
     def info(message: str, icon: str = None) -> None:
         """操作提示（深灰色）"""
         icon = icon or Logger.ICON_FETCH
-        print(f"{Logger.GRAY}{icon} {message}{Logger.RESET}")
+        Logger._print(f"{Logger.GRAY}{icon} {message}{Logger.RESET}")
 
     @staticmethod
     def step(message: str) -> None:
         """阶段分隔线"""
-        print(f"{Logger.GRAY}━━ {message}{Logger.RESET}")
+        Logger._print(f"{Logger.GRAY}━━ {message}{Logger.RESET}")
 
     @staticmethod
     def highlight(message: str) -> None:
         """关键信息高亮（青色）"""
-        print(f"{Logger.CYAN}{message}{Logger.RESET}")
+        Logger._print(f"{Logger.CYAN}{message}{Logger.RESET}")
 
     @staticmethod
     def path(message: str) -> None:
         """路径信息（黄色）"""
-        print(f"{Logger.YELLOW}{Logger.ICON_FOLDER} {message}{Logger.RESET}")
+        Logger._print(f"{Logger.YELLOW}{Logger.ICON_FOLDER} {message}{Logger.RESET}")
 
     @staticmethod
     def warning(message: str) -> None:
         """警告（黄色 + ⚠）"""
-        print(f"{Logger.YELLOW}{Logger.ICON_WARN} {message}{Logger.RESET}", file=sys.stderr)
+        Logger._print(f"{Logger.YELLOW}{Logger.ICON_WARN} {message}{Logger.RESET}", file=sys.stderr)
 
     @staticmethod
     def error(message: str) -> None:
         """错误（红色 + ✖）"""
-        print(f"{Logger.RED}{Logger.ICON_ERROR} {message}{Logger.RESET}", file=sys.stderr)
+        Logger._print(f"{Logger.RED}{Logger.ICON_ERROR} {message}{Logger.RESET}", file=sys.stderr)
 
     @staticmethod
     def success(message: str) -> None:
         """成功结果（绿色 + ✔）"""
-        print(f"{Logger.GREEN}{Logger.ICON_SUCCESS} {message}{Logger.RESET}")
+        Logger._print(f"{Logger.GREEN}{Logger.ICON_SUCCESS} {message}{Logger.RESET}")
 
     @staticmethod
     def skip(message: str) -> None:
         """跳过（洋红色 + ⏭）"""
-        print(f"{Logger.MAGENTA}{Logger.ICON_SKIP} {message}{Logger.RESET}")
+        Logger._print(f"{Logger.MAGENTA}{Logger.ICON_SKIP} {message}{Logger.RESET}")
+
+    @staticmethod
+    def skipped_item(name: str, reason: str = "已存在") -> None:
+        """跳过单个项目。"""
+        Logger._print(
+            f"{Logger.MAGENTA}{Logger.ICON_SKIP}{Logger.RESET} "
+            f"{Logger.GRAY}{name}{Logger.RESET} {Logger.GRAY}({reason}){Logger.RESET}"
+        )
+
+    @staticmethod
+    def success_item(name: str, detail: str = None) -> None:
+        """成功处理单个项目。"""
+        suffix = f" {Logger.GRAY}({detail}){Logger.RESET}" if detail else ""
+        Logger._print(f"{Logger.GREEN}{Logger.ICON_SUCCESS}{Logger.RESET} {Logger.CYAN}{name}{Logger.RESET}{suffix}")
+
+    @staticmethod
+    def inline_status(icon: str, message: str, end: str = "\n") -> None:
+        """打印不带固定语义的状态行。"""
+        Logger._print(f"{Logger.GRAY}{icon}{Logger.RESET} {message}", end=end)
 
 
 class ProgressBar:
@@ -194,6 +246,7 @@ class ProgressBar:
 
         # 速度和耗时
         speed_str = format_file_size(int(speed))
+        speed_display = f"{speed_str}/s"
         if elapsed < 60:
             elapsed_str = f"{elapsed:.1f}s"
         else:
@@ -211,8 +264,6 @@ class ProgressBar:
         # 根据窗口宽度决定布局
         # 最小行格式: "100% 2.3MB" = 约10字符
         # 加上进度条(8~20)和空格
-        min_line = 12  # 百分比 + 空格 + 大小
-
         if term_width <= 50:
             # 极简模式：无文件名，8格进度条，无时间
             bar_width = 8
@@ -232,42 +283,49 @@ class ProgressBar:
             show_speed = True
             # 文件名空间 = 总宽度 - 进度条 - 固定信息
             # 格式: "xxx... [████████████] 100% 2.3MB 841KB/s 2.8s"
-            fixed = 6 + bar_width + 1 + len(percent_str) + 1 + len(size_str) + 1 + len(speed_str) + 1 + len(elapsed_str)
+            fixed = 6 + bar_width + 1 + len(percent_str) + 1 + len(size_str) + 3 + len(speed_display) + 3 + len(elapsed_str)
             name_space = term_width - fixed - 8
         else:
             # 宽屏模式：完整文件名，20格进度条
             bar_width = 20
             show_time = True
             show_speed = True
-            fixed = 6 + bar_width + 1 + len(percent_str) + 1 + len(size_str) + 1 + len(speed_str) + 1 + len(elapsed_str)
+            fixed = 6 + bar_width + 1 + len(percent_str) + 1 + len(size_str) + 3 + len(speed_display) + 3 + len(elapsed_str)
             name_space = term_width - fixed - 8
 
         # 智能截断文件名
         if name_space > 0:
-            if name_space < len(self.filename):
-                display_name = self.filename[:name_space - 3] + "..."
+            if visible_width(self.filename) > name_space:
+                display_name = truncate_visible(self.filename, max(name_space - 3, 0)) + "..."
             else:
                 display_name = self.filename
         else:
             display_name = ""
 
         # 生成进度条
+        filled_char = "█"
+        empty_char = "░"
+        try:
+            (filled_char + empty_char).encode(sys.stdout.encoding or "utf-8")
+        except UnicodeEncodeError:
+            filled_char = "#"
+            empty_char = "-"
+
         filled = int(bar_width * percent) if self.total_size > 0 else 0
-        bar = f"{bar_color}{'█' * filled}{GRAY}{'░' * (bar_width - filled)}{RESET}"
+        bar = f"{bar_color}{filled_char * filled}{GRAY}{empty_char * (bar_width - filled)}{RESET}"
+
+        stats = [f"{percent_str.rjust(3)}%", size_str]
+        if show_speed:
+            stats.append(speed_display)
+        if show_time:
+            stats.append(elapsed_str)
+        stats_text = f" {GRAY}|{RESET} ".join(stats)
 
         # 组装行
         if display_name:
-            line = f"{display_name} [{bar}] {percent_str}% {size_str}"
-            if show_speed:
-                line += f" {speed_str}"
-            if show_time:
-                line += f" {elapsed_str}"
+            line = f"{display_name} [{bar}] {stats_text}"
         else:
-            line = f"[{bar}] {percent_str}% {size_str}"
-            if show_speed:
-                line += f" {speed_str}"
-            if show_time:
-                line += f" {elapsed_str}"
+            line = f"[{bar}] {stats_text}"
 
         # 确保行宽度正确
         vis_w = visible_width(line)
@@ -276,5 +334,12 @@ class ProgressBar:
         elif vis_w > term_width:
             line = truncate_visible(line, term_width)
 
-        sys.stdout.write(f"\r{line}")
+        try:
+            sys.stdout.write(f"\r{line}")
+        except UnicodeEncodeError:
+            encoding = sys.stdout.encoding or "utf-8"
+            safe_line = line.encode(encoding, errors="replace").decode(
+                encoding, errors="replace"
+            )
+            sys.stdout.write(f"\r{safe_line}")
         sys.stdout.flush()

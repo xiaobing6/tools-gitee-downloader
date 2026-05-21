@@ -132,7 +132,7 @@ def load_config(args) -> Config:
     # 2. 自动查找默认配置文件
     auto_config = Config.find_config_file()
     if auto_config:
-        print(f"{Logger.GRAY}⚙{Logger.RESET} {auto_config}")
+        Logger.info(str(auto_config), Logger.ICON_CONFIG)
         return Config.from_file(auto_config)
 
     # 3. 从命令行参数创建
@@ -183,7 +183,11 @@ def main() -> int:
     # ═══════════════════════════════════════════════════════════
     # 阶段 1：查找 Release
     # ═══════════════════════════════════════════════════════════
-    print(f"{Logger.GRAY}📡{Logger.RESET} {Logger.CYAN}{config.default_owner}/{config.default_repo}{Logger.RESET}", end="")
+    Logger.inline_status(
+        Logger.ICON_FETCH,
+        f"{Logger.CYAN}{config.default_owner}/{config.default_repo}{Logger.RESET}",
+        end="",
+    )
 
     target_release = release_manager.find_release(
         config.default_owner, config.default_repo, args.tag
@@ -197,7 +201,10 @@ def main() -> int:
     release_id = target_release.get("id")
     tag_name = target_release.get("tag_name", "unknown")
     print()
-    print(f"   {Logger.GREEN}✔{Logger.RESET} {Logger.CYAN}{tag_name}{Logger.RESET} {Logger.GRAY}(ID: {release_id}){Logger.RESET}")
+    print(
+        f"   {Logger.GREEN}{Logger.ICON_SUCCESS}{Logger.RESET} "
+        f"{Logger.CYAN}{tag_name}{Logger.RESET} {Logger.GRAY}(ID: {release_id}){Logger.RESET}"
+    )
 
     # ═══════════════════════════════════════════════════════════
     # 阶段 2：获取附件列表
@@ -214,7 +221,10 @@ def main() -> int:
             Logger.warning("该 release 没有附件")
         return 0
 
-    print(f"   {Logger.GREEN}✔{Logger.RESET} {Logger.CYAN}{len(attachments)}{Logger.RESET} 个文件待下载")
+    print(
+        f"   {Logger.GREEN}{Logger.ICON_SUCCESS}{Logger.RESET} "
+        f"{Logger.CYAN}{len(attachments)}{Logger.RESET} 个文件待下载"
+    )
 
     # 准备下载任务
     downloader = FileDownloader(config, token)
@@ -245,10 +255,18 @@ def main() -> int:
     # 完成摘要
     # ═══════════════════════════════════════════════════════════
     summary = batch_downloader.get_summary()
+    handled = summary["success"] + summary["skipped"]
     print()
-    print(f"{Logger.GREEN}✔{Logger.RESET} 下载完成: {Logger.CYAN}{summary['success']}/{summary['total']}{Logger.RESET}")
+    print(
+        f"{Logger.GREEN}{Logger.ICON_SUCCESS}{Logger.RESET} "
+        f"处理完成: {Logger.CYAN}{handled}/{summary['total']}{Logger.RESET}"
+    )
+    if summary["success"] > 0:
+        Logger.success(f"下载 {summary['success']} 个")
     if summary["skipped"] > 0:
-        print(f"{Logger.MAGENTA}⏭{Logger.RESET} 跳过 {summary['skipped']} 个")
+        Logger.skip(f"跳过 {summary['skipped']} 个")
+    if summary["failed"] > 0:
+        Logger.error(f"失败 {summary['failed']} 个")
     print()
     Logger.path(f"{output_dir.resolve()}")
 
