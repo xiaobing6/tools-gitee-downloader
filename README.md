@@ -37,7 +37,7 @@ python main.py --config gitee-downloader.yaml
 python main.py --tag v0.9.164
 python main.py --file-filter "*.tar.gz"
 python main.py --output-dir ./packages
-python main.py --owner other-user --repo other-repo --token YOUR_TOKEN
+python main.py --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
 ```
 
 ## 配置

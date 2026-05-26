@@ -28,7 +28,10 @@ def parse_arguments() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  # 使用默认配置下载
+  # 首次使用：生成本地配置文件
+  python main.py --init-config
+
+  # 编辑 gitee-downloader.yaml，将 YOUR_GITEE_TOKEN 替换为真实 token 后运行
   python main.py
 
   # 使用配置文件
@@ -44,10 +47,7 @@ def parse_arguments() -> argparse.Namespace:
   python main.py --output-dir ./packages
 
   # 指定其他仓库
-  python main.py --owner other-user --repo other-repo --token YOUR_TOKEN
-
-  # 生成配置文件示例
-  python main.py --init-config
+  python main.py --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
         """,
     )
 
@@ -59,7 +59,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--init-config",
         action="store_true",
-        help="生成默认配置文件 (gitee-downloader.yaml) 并退出",
+        help="生成本地配置文件 (gitee-downloader.yaml) 并退出",
     )
     parser.add_argument(
         "--owner",
@@ -74,7 +74,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--token",
         default=None,
-        help="Gitee 访问令牌（优先级: 命令行 > 环境变量 > 配置文件 > 内置）",
+        help="Gitee 访问令牌（优先级: 命令行 > 环境变量 GITEE_TOKEN > 配置文件 > 未配置）",
     )
     parser.add_argument(
         "--output-dir",
@@ -119,7 +119,7 @@ def load_config(args) -> Config:
     1. 命令行参数 --config 指定的配置文件
     2. 自动查找默认配置文件
     3. 命令行参数直接指定
-    4. 内置默认值
+    4. 内置非敏感默认值
     """
     # 1. 如果指定了 --config，使用指定文件
     if args.config:
@@ -143,7 +143,7 @@ def load_config(args) -> Config:
 def merge_config_with_args(config: Config, args) -> Config:
     """
     命令行参数覆盖配置文件中的值
-    优先级：命令行参数 > 配置文件 > 内置默认值
+    优先级：命令行参数 > 配置文件 > 内置非敏感默认值
     """
     if args.owner:
         config.default_owner = args.owner
