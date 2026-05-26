@@ -60,7 +60,7 @@ python main.py --tag v0.9.164
 python main.py --output-dir ./packages
 
 # 指定其他仓库
-python main.py --owner other-user --repo other-repo --token YOUR_TOKEN
+python main.py --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
 ```
 
 ---
