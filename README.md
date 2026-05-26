@@ -14,6 +14,23 @@
 
 ## 使用
 
+首次使用建议先生成本地配置文件，并填写自己的 Gitee token：
+
+```bash
+python main.py --init-config
+# 编辑 gitee-downloader.yaml，把 YOUR_GITEE_TOKEN 替换为真实 token
+python main.py
+```
+
+也可以使用环境变量提供 token：
+
+```powershell
+$env:GITEE_TOKEN="your-token"
+python main.py
+```
+
+常用命令：
+
 ```bash
 python main.py
 python main.py --config gitee-downloader.yaml
@@ -21,12 +38,6 @@ python main.py --tag v0.9.164
 python main.py --file-filter "*.tar.gz"
 python main.py --output-dir ./packages
 python main.py --owner other-user --repo other-repo --token YOUR_TOKEN
-```
-
-生成默认配置文件：
-
-```bash
-python main.py --init-config
 ```
 
 ## 配置
@@ -44,7 +55,7 @@ python main.py --init-config
 
 ```yaml
 base_url: https://gitee.com/api/v5
-token: YOUR_TOKEN
+token: YOUR_GITEE_TOKEN
 owner: bio-sense
 repo: icp-monitoring-app
 output_dir: ./downloads
@@ -59,8 +70,10 @@ auto_rename: true
 Token 优先级：
 
 ```text
-命令行 --token > 环境变量 GITEE_TOKEN > 配置文件 token > 内置默认值
+命令行 --token > 环境变量 GITEE_TOKEN > 配置文件 token > 空字符串
 ```
+
+`YOUR_GITEE_TOKEN` 是占位符，不会作为真实 token 使用。真实的 `gitee-downloader.yaml` 是本地配置文件，已在 `.gitignore` 中忽略；仓库中只保留 `gitee-downloader.example.yaml` 示例。
 
 ## 输出目录
 

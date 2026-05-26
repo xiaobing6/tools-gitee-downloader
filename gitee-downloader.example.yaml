@@ -1,0 +1,11 @@
+base_url: https://gitee.com/api/v5
+token: YOUR_GITEE_TOKEN
+owner: bio-sense
+repo: icp-monitoring-app
+output_dir: ./downloads
+timeout: 30
+download_timeout: 60
+chunk_size: 8192
+file_filter: "*"
+auto_extract: true
+auto_rename: true
