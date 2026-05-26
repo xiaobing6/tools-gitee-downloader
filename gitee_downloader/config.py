@@ -4,12 +4,14 @@ import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional, Set
 
 
 @dataclass
 class Config:
     """应用配置类"""
+
+    TOKEN_PLACEHOLDERS: ClassVar[Set[str]] = {"", "YOUR_GITEE_TOKEN"}
 
     # Gitee API 配置
     base_url: str = "https://gitee.com/api/v5"
@@ -172,14 +174,26 @@ class Config:
         1. 命令行参数
         2. 环境变量 GITEE_TOKEN
         3. 配置文件中的值
-        4. 内置默认值
+        4. 空字符串
         """
-        if args_token:
-            return args_token
+        token = self._normalize_token(args_token)
+        if token:
+            return token
+
         env_token = os.environ.get("GITEE_TOKEN")
-        if env_token:
-            return env_token
-        return self.default_token
+        token = self._normalize_token(env_token)
+        if token:
+            return token
+
+        return self._normalize_token(self.default_token)
+
+    @classmethod
+    def _normalize_token(cls, token: Optional[str]) -> str:
+        """清理 token，并把占位符当作未配置处理。"""
+        if not token:
+            return ""
+        normalized = token.strip()
+        return "" if normalized in cls.TOKEN_PLACEHOLDERS else normalized
 
     def get_output_dir(self, args_output_dir: Optional[str] = None) -> Path:
         """获取输出目录"""

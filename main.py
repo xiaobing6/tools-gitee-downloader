@@ -109,7 +109,8 @@ def init_config_file() -> None:
     config = Config()
     config.save_to_file(config_path, format="yaml")
     Logger.success(f"配置文件已生成: {config_path.resolve()}")
-    Logger.info("您可以编辑此文件来自定义配置")
+    Logger.info("请将 token: YOUR_GITEE_TOKEN 替换为真实 Gitee token")
+    Logger.info("您可以继续编辑此文件来自定义其他配置")
 
 
 def load_config(args) -> Config:
