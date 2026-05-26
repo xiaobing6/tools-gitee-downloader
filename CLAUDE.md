@@ -32,8 +32,9 @@
 |-----------|------|
 | `README.md` | 面向用户的使用说明 |
 | `CLAUDE.md` | 项目文档和维护索引 |
-| `gitee-downloader.yaml` | 本地配置文件 |
-| `.gitignore` | 忽略 Python 缓存、下载产物、上传临时目录等 |
+| `gitee-downloader.example.yaml` | 可提交的配置示例 |
+| `gitee-downloader.yaml` | 本地配置文件，已忽略，不应提交 |
+| `.gitignore` | 忽略 Python 缓存、下载产物、上传临时目录和本地配置等 |
 | `downloads/` | 默认下载目录，运行产物，已忽略 |
 | `.uploads/` | 本地上传/临时目录，已忽略 |
 | `__pycache__/` | Python 编译缓存，已忽略 |
@@ -43,14 +44,11 @@
 ## 快速开始
 
 ```bash
-# 使用默认配置下载
-python main.py
-
-# 使用配置文件
-python main.py --config gitee-downloader.yaml
-
-# 生成配置文件示例
+# 生成本地配置文件
 python main.py --init-config
+
+# 编辑 gitee-downloader.yaml，把 YOUR_GITEE_TOKEN 替换为真实 token
+python main.py
 
 # 下载指定文件类型
 python main.py --file-filter "*.tar.gz"
@@ -75,7 +73,7 @@ python main.py --owner other-user --repo other-repo --token YOUR_TOKEN
 | `--init-config` | - | 生成默认配置文件 |
 | `--owner` | `bio-sense` | 仓库所有者 |
 | `--repo` | `icp-monitoring-app` | 仓库名称 |
-| `--token` | 内置 token | Gitee 访问令牌 |
+| `--token` | 空 | Gitee 访问令牌 |
 | `--output-dir` | `./downloads` | 下载保存目录 |
 | `--file-filter` | `*` | 文件名过滤模式 |
 | `--tag` | 最新版本 | 指定版本 tag |
@@ -83,8 +81,10 @@ python main.py --owner other-user --repo other-repo --token YOUR_TOKEN
 Token 获取优先级：
 
 ```text
-命令行 --token > 环境变量 GITEE_TOKEN > 配置文件 token > 内置默认值
+命令行 --token > 环境变量 GITEE_TOKEN > 配置文件 token > 空字符串
 ```
+
+`YOUR_GITEE_TOKEN` 是占位符，`Config.get_token()` 会把它按未配置处理。
 
 ---
 
@@ -203,13 +203,20 @@ Git 忽略规则应覆盖：
 downloads/
 .uploads/
 __pycache__/
+gitee-downloader.yaml
+gitee-downloader.yml
+gitee-downloader.json
+.gitee-downloader.yaml
+.gitee-downloader.yml
+.gitee-downloader.json
 ```
 
 ---
 
 ## 维护注意
 
-- 除非用户明确要求，不要修改 `gitee-downloader.yaml` 中的 token 策略。
+- 真实 token 不应写入代码、文档或可提交配置；仓库只保留 `gitee-downloader.example.yaml`。
+- `gitee-downloader.yaml` 是本地私有配置文件，不应被 Git 跟踪。
 - 新增解压格式时必须保留路径安全校验。
 - 修改终端输出时，需要考虑 Windows Terminal、PowerShell、GBK 控制台和 emoji 兼容。
 - 下载产物和缓存目录不应进入版本库。
@@ -220,6 +227,7 @@ __pycache__/
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-05-26 | 移除当前版本中的 Gitee token 明文，改为本地配置和示例配置 |
 | 2026-05-21 | 同步 README 和 CLAUDE 项目说明 |
 | 2026-05-21 | 增强 Windows 输出兼容、进度条可读性和中文宽度计算 |
 | 2026-05-21 | 收敛 Logger 输出和重复下载摘要 |

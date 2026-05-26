@@ -158,6 +158,14 @@ ENV/
 env.bak/
 venv.bak/
 
+# Local Gitee downloader configs
+gitee-downloader.yaml
+gitee-downloader.yml
+gitee-downloader.json
+.gitee-downloader.yaml
+.gitee-downloader.yml
+.gitee-downloader.json
+
 # Spyder project settings
 .spyderproject
 .spyproject
