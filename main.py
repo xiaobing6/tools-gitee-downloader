@@ -195,7 +195,7 @@ def main() -> int:
 
     if not target_release:
         print()  # 换行
-        Logger.error("无法获取 releases 列表，请检查仓库地址和 token")
+        Logger.error("无法获取 release 信息，请检查仓库地址、tag 和 token")
         return 1
 
     release_id = target_release.get("id")

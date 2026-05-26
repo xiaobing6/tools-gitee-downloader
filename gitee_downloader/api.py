@@ -1,6 +1,7 @@
 """Gitee API 封装模块"""
 
 from typing import Dict, List, Optional, Any
+from urllib.parse import quote
 
 import requests
 
@@ -20,27 +21,54 @@ class GiteeAPI:
         """生成 API 请求头"""
         return {"PRIVATE-TOKEN": self.token} if self.token else {}
 
-    def get_releases(self, owner: str, repo: str) -> Optional[List[Dict[str, Any]]]:
+    def get_latest_release(self, owner: str, repo: str) -> Optional[Dict[str, Any]]:
         """
-        获取仓库的 releases 列表，按创建时间倒序（最新在前）
+        获取仓库最后更新的 release。
 
         Args:
             owner: 仓库所有者
             repo: 仓库名称
 
         Returns:
-            releases 列表，失败返回 None
+            release 信息，失败返回 None
         """
-        url = f"{self.base_url}/repos/{owner}/{repo}/releases"
+        url = f"{self.base_url}/repos/{owner}/{repo}/releases/latest"
         try:
             resp = requests.get(url, headers=self._headers(), timeout=self.config.timeout)
             resp.raise_for_status()
-            releases = resp.json()
-            # 按创建时间倒序排序，确保第一个是最新的
-            releases.sort(key=lambda r: r.get("created_at", ""), reverse=True)
-            return releases
+            return resp.json()
         except requests.exceptions.RequestException as e:
-            Logger.error(f"获取 releases 失败: {e}")
+            Logger.error(f"获取最新 release 失败: {e}")
+            return None
+
+    def get_release_by_tag(
+        self, owner: str, repo: str, tag: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        根据 tag 获取仓库 release。
+
+        Args:
+            owner: 仓库所有者
+            repo: 仓库名称
+            tag: release tag
+
+        Returns:
+            release 信息，失败返回 None
+        """
+        encoded_tag = quote(tag, safe="")
+        url = f"{self.base_url}/repos/{owner}/{repo}/releases/tags/{encoded_tag}"
+        try:
+            resp = requests.get(url, headers=self._headers(), timeout=self.config.timeout)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and e.response.status_code == 404:
+                Logger.warning(f"未找到 tag 为 '{tag}' 的 release")
+            else:
+                Logger.error(f"获取 tag release 失败: {e}")
+            return None
+        except requests.exceptions.RequestException as e:
+            Logger.error(f"获取 tag release 失败: {e}")
             return None
 
     def get_release_attachments(
@@ -107,18 +135,10 @@ class ReleaseManager:
         Returns:
             release 信息，未找到返回 None
         """
-        releases = self.api.get_releases(owner, repo)
-        if not releases:
-            return None
-
         if tag:
-            for release in releases:
-                if release.get("tag_name") == tag:
-                    return release
-            Logger.warning(f"未找到 tag 为 '{tag}' 的 release")
-            return None
+            return self.api.get_release_by_tag(owner, repo, tag)
 
-        return releases[0]  # 第一个为最新
+        return self.api.get_latest_release(owner, repo)
 
     def get_attachments(
         self, owner: str, repo: str, release_id: int, pattern: str = "*"

@@ -136,7 +136,8 @@ main.py
 
 ### api.py
 
-- `GiteeAPI.get_releases(owner, repo)`: 获取 releases 列表并按创建时间倒序排序。
+- `GiteeAPI.get_latest_release(owner, repo)`: 通过 Gitee latest 接口获取最新 release。
+- `GiteeAPI.get_release_by_tag(owner, repo, tag)`: 通过 Gitee tag 接口获取指定 release。
 - `GiteeAPI.get_release_attachments(owner, repo, release_id)`: 获取附件列表。
 - `GiteeAPI.get_download_url(...)`: 生成附件下载 URL。
 - `ReleaseManager.find_release(owner, repo, tag)`: 查找指定 tag 或最新 release。
