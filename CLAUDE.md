@@ -32,9 +32,13 @@
 |-----------|------|
 | `README.md` | 面向用户的使用说明 |
 | `CLAUDE.md` | 项目文档和维护索引 |
+| `requirements.txt` | 运行依赖，仅包含 `requests` 和 `PyYAML` |
+| `requirements-build.txt` | 构建依赖，用于 Nuitka 打包 |
+| `build.bat` | Windows Nuitka 单文件 exe 构建入口 |
 | `gitee-downloader.example.yaml` | 可提交的配置示例 |
 | `gitee-downloader.yaml` | 本地配置文件，已忽略，不应提交 |
 | `.gitignore` | 忽略 Python 缓存、下载产物、上传临时目录和本地配置等 |
+| `dist/` | Nuitka 构建产物目录，不应提交 |
 | `downloads/` | 默认下载目录，运行产物，已忽略 |
 | `.uploads/` | 本地上传/临时目录，已忽略 |
 | `__pycache__/` | Python 编译缓存，已忽略 |
@@ -43,7 +47,10 @@
 
 ## 快速开始
 
-```bash
+```powershell
+# 安装运行依赖
+python -m pip install -r requirements.txt
+
 # 生成本地配置文件
 python main.py --init-config
 
@@ -61,6 +68,24 @@ python main.py --output-dir ./packages
 
 # 指定其他仓库
 python main.py --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
+```
+
+---
+
+## 依赖与打包
+
+- 运行依赖只放在 `requirements.txt`：`requests`、`PyYAML`。
+- 构建依赖单独放在 `requirements-build.txt`：`nuitka`、`ordered-set`、`zstandard`。
+- Windows exe 构建入口是 `build.bat`，产物为 `dist/gitee-downloader.exe`。
+- `gitee-downloader.yaml` 是运行时本地配置文件，不应进入 Git，也不会默认编译进 exe。
+
+常用命令：
+
+```powershell
+python -m pip install -r requirements.txt
+python main.py --help
+.\build.bat
+.\dist\gitee-downloader.exe --help
 ```
 
 ---
@@ -193,6 +218,7 @@ filename [████████░░░░] 100% | 2.3 MB | 634.0 KB/s | 3.6
 常用检查命令：
 
 ```bash
+python -m pip install -r requirements.txt
 python -m compileall -q main.py gitee_downloader
 python main.py --help
 ```
@@ -217,6 +243,8 @@ gitee-downloader.json
 
 - 真实 token 不应写入代码、文档或可提交配置；仓库只保留 `gitee-downloader.example.yaml`。
 - `gitee-downloader.yaml` 是本地私有配置文件，不应被 Git 跟踪。
+- 不要在 Nuitka 命令中加入 `--include-data-file=gitee-downloader.yaml=...`，避免把本地 token 配置打进 exe。
+- `dist/` 是构建产物目录，不提交 exe 成品；需要分发时应通过 Release 上传。
 - 新增解压格式时必须保留路径安全校验。
 - 修改终端输出时，需要考虑 Windows Terminal、PowerShell、GBK 控制台和 emoji 兼容。
 - 下载产物和缓存目录不应进入版本库。
@@ -227,6 +255,7 @@ gitee-downloader.json
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-05-27 | 增加轻量依赖清单和 Nuitka Windows exe 打包入口 |
 | 2026-05-26 | 移除当前版本中的 Gitee token 明文，改为本地配置和示例配置 |
 | 2026-05-21 | 同步 README 和 CLAUDE 项目说明 |
 | 2026-05-21 | 增强 Windows 输出兼容、进度条可读性和中文宽度计算 |

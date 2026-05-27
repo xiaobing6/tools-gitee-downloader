@@ -14,9 +14,16 @@
 
 ## 使用
 
+安装运行依赖：
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
 首次使用建议先生成本地配置文件，并填写自己的 Gitee token：
 
-```bash
+```powershell
+python main.py --help
 python main.py --init-config
 # 编辑 gitee-downloader.yaml，把 YOUR_GITEE_TOKEN 替换为真实 token
 python main.py
@@ -31,7 +38,7 @@ python main.py
 
 常用命令：
 
-```bash
+```powershell
 python main.py
 python main.py --config gitee-downloader.yaml
 python main.py --tag v0.9.164
@@ -39,6 +46,30 @@ python main.py --file-filter "*.tar.gz"
 python main.py --output-dir ./packages
 python main.py --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
 ```
+
+## 打包 exe
+
+安装运行依赖和构建依赖，并使用 Nuitka 打包：
+
+```powershell
+.\build.bat
+```
+
+打包产物默认生成到：
+
+```text
+dist/gitee-downloader.exe
+```
+
+exe 使用方式与源码运行一致，只是命令入口改为 exe：
+
+```powershell
+.\dist\gitee-downloader.exe --help
+.\dist\gitee-downloader.exe --init-config
+.\dist\gitee-downloader.exe --tag v0.9.170
+```
+
+`gitee-downloader.yaml` 是运行时本地配置文件，不会默认编译进 exe。打包脚本没有使用 `--include-data-file` 或 `--include-data-dir` 包含本地配置。
 
 ## 配置
 
@@ -89,7 +120,8 @@ Token 优先级：
 
 ## 开发检查
 
-```bash
+```powershell
+python -m pip install -r requirements.txt
 python -m compileall -q main.py gitee_downloader
 python main.py --help
 ```
