@@ -32,6 +32,7 @@
 |-----------|------|
 | `README.md` | 面向用户的使用说明 |
 | `CLAUDE.md` | 项目文档和维护索引 |
+| `.editorconfig` | 编辑器基础约束，固定 UTF-8、CRLF 和 4 空格缩进 |
 | `requirements.txt` | 运行依赖，仅包含 `requests` 和 `PyYAML` |
 | `requirements-build.txt` | 构建依赖，用于 Nuitka 打包 |
 | `build.bat` | Windows Nuitka 单文件 exe 构建入口 |
@@ -77,6 +78,7 @@ python main.py --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
 - 运行依赖只放在 `requirements.txt`：`requests`、`PyYAML`。
 - 构建依赖单独放在 `requirements-build.txt`：`nuitka`、`ordered-set`、`zstandard`。
 - Windows exe 构建入口是 `build.bat`，产物为 `dist/gitee-downloader.exe`。
+- 正式打包推荐 Python 3.13；Python 3.14 当前可能触发 Nuitka 实验性支持提示。
 - `gitee-downloader.yaml` 是运行时本地配置文件，不应进入 Git，也不会默认编译进 exe。
 
 常用命令：
@@ -170,7 +172,7 @@ main.py
 
 ### downloader.py
 
-- `FileDownloader.download(...)`: 下载单个文件，负责已存在文件的跳过判断和进度条显示。
+- `FileDownloader.download(...)`: 下载单个文件，负责已存在文件的大小校验、`.part` 临时文件落盘和进度条显示。
 - `BatchDownloader.download_all()`: 执行所有下载任务并记录 success/skipped 状态。
 - `BatchDownloader.get_summary()`: 返回 total/success/skipped/failed 摘要。
 
@@ -245,6 +247,7 @@ gitee-downloader.json
 - `gitee-downloader.yaml` 是本地私有配置文件，不应被 Git 跟踪。
 - 不要在 Nuitka 命令中加入 `--include-data-file=gitee-downloader.yaml=...`，避免把本地 token 配置打进 exe。
 - `dist/` 是构建产物目录，不提交 exe 成品；需要分发时应通过 Release 上传。
+- `.editorconfig` 是轻量工程化约束，新增文本文件时应保持 UTF-8。
 - 新增解压格式时必须保留路径安全校验。
 - 修改终端输出时，需要考虑 Windows Terminal、PowerShell、GBK 控制台和 emoji 兼容。
 - 下载产物和缓存目录不应进入版本库。
@@ -255,6 +258,7 @@ gitee-downloader.json
 
 | 日期 | 变更内容 |
 |------|----------|
+| 2026-06-01 | 增加 `.part` 下载完整性保护、动态 help 示例和 `.editorconfig` |
 | 2026-05-27 | 增加轻量依赖清单和 Nuitka Windows exe 打包入口 |
 | 2026-05-26 | 移除当前版本中的 Gitee token 明文，改为本地配置和示例配置 |
 | 2026-05-21 | 同步 README 和 CLAUDE 项目说明 |

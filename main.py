@@ -21,33 +21,46 @@ from gitee_downloader.extractor import PostProcessor
 from gitee_downloader.utils import setup_windows_encoding, Logger
 
 
+def command_example() -> str:
+    """Return the command shown in help examples for source or exe runs."""
+    program_path = Path(sys.argv[0])
+    if program_path.suffix.lower() == ".exe":
+        try:
+            rel_path = program_path.resolve().relative_to(Path.cwd().resolve())
+            return f".\\{rel_path}"
+        except ValueError:
+            return f".\\{program_path.name}"
+    return "python main.py"
+
+
 def parse_arguments() -> argparse.Namespace:
     """解析命令行参数"""
+    cmd = command_example()
     parser = argparse.ArgumentParser(
         description="从 Gitee 仓库 Release 下载最新版本安装包",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=f"""
 示例:
   # 首次使用：生成本地配置文件
-  python main.py --init-config
+  {cmd} --init-config
 
   # 编辑 gitee-downloader.yaml，将 YOUR_GITEE_TOKEN 替换为真实 token 后运行
-  python main.py
+  {cmd}
 
   # 使用配置文件
-  python main.py --config gitee-downloader.yaml
+  {cmd} --config gitee-downloader.yaml
 
   # 下载指定文件类型
-  python main.py --file-filter "*.tar.gz"
+  {cmd} --file-filter "*.tar.gz"
 
   # 指定版本 tag
-  python main.py --tag v0.9.156
+  {cmd} --tag v0.9.156
 
   # 指定下载目录
-  python main.py --output-dir ./packages
+  {cmd} --output-dir ./packages
 
   # 指定其他仓库
-  python main.py --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
+  {cmd} --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
         """,
     )
 
