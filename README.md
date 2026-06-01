@@ -49,6 +49,8 @@ python main.py --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
 
 ## 打包 exe
 
+正式打包建议使用 Python 3.13。当前 Python 3.14 虽然可以成功构建，但 Nuitka 对 3.14 仍可能提示实验性支持。
+
 安装运行依赖和构建依赖，并使用 Nuitka 打包：
 
 ```powershell
@@ -125,3 +127,5 @@ python -m pip install -r requirements.txt
 python -m compileall -q main.py gitee_downloader
 python main.py --help
 ```
+
+项目使用 `.editorconfig` 约束 UTF-8、CRLF 和 4 空格缩进，避免中文文档和终端说明在不同编辑器里被保存成错误编码。
