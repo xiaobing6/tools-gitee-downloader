@@ -128,4 +128,4 @@ python -m compileall -q main.py gitee_downloader
 python main.py --help
 ```
 
-项目使用 `.editorconfig` 约束 UTF-8、CRLF 和 4 空格缩进，避免中文文档和终端说明在不同编辑器里被保存成错误编码。
+项目使用 `.editorconfig` 和 `.gitattributes` 约束 UTF-8、默认 LF、bat 文件 CRLF 和 4 空格缩进，避免中文文档和终端说明在不同编辑器里被保存成错误编码。代码代理维护约定见 `AGENTS.md`。

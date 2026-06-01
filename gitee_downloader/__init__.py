@@ -5,4 +5,4 @@ Gitee Release 自动下载工具
 """
 
 __version__ = "2.0.0"
-__author__ = "Claude"
+__author__ = "xiaobing6"

@@ -166,6 +166,9 @@ gitee-downloader.json
 .gitee-downloader.yml
 .gitee-downloader.json
 
+# Partial downloads
+*.part
+
 # Spyder project settings
 .spyderproject
 .spyproject
