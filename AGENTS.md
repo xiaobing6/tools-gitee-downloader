@@ -53,7 +53,7 @@ src/gitee_downloader/__main__.py
 - token 优先级：命令行参数 > 环境变量 `GITEE_TOKEN` > 配置文件 > 空字符串。
 - 配置只支持 YAML；`auto_rename` 配置链已删除，重命名由 `PostProcessor` 无条件执行。
 - `downloads/`、`dist/`、`.uploads/`、`__pycache__/`、`*.part` 都是本地产物，不应提交。
-- 文本文件默认使用 UTF-8 + LF；`*.bat` 使用 CRLF。
+- 文本文件默认使用 UTF-8 + LF；换行规则见 `.gitattributes`。
 - 新增解压格式时必须保留路径安全校验，不能直接使用 `extractall()`。
 - 修改终端输出时，需要考虑 Windows Terminal、PowerShell、GBK 控制台和 emoji 兼容。
 - `tests/` 只写纯逻辑测试，不得发起网络请求。
