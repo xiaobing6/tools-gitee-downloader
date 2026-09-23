@@ -6,7 +6,7 @@ from typing import List, Literal, Optional
 import requests
 
 from .config import Config
-from .utils import Logger, ProgressBar, format_file_size, is_already_downloaded
+from .utils import Logger, ProgressBar, build_headers, format_file_size, is_already_downloaded
 
 DownloadStatus = Literal["downloaded", "skipped", "failed"]
 
@@ -18,16 +18,12 @@ class FileDownloader:
         self.config = config
         self.token = token
 
-    def _headers(self) -> dict:
-        """生成请求头"""
-        return {"PRIVATE-TOKEN": self.token} if self.token else {}
-
     def _remote_size(self, download_url: str) -> Optional[int]:
         """Return remote content length when the server exposes it."""
         try:
             resp = requests.head(
                 download_url,
-                headers=self._headers(),
+                headers=build_headers(self.token),
                 allow_redirects=True,
                 timeout=self.config.timeout,
             )
@@ -86,7 +82,7 @@ class FileDownloader:
 
             resp = requests.get(
                 download_url,
-                headers=self._headers(),
+                headers=build_headers(self.token),
                 stream=True,
                 timeout=self.config.download_timeout,
             )

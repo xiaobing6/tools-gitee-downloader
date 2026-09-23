@@ -6,7 +6,7 @@ from urllib.parse import quote
 import requests
 
 from .config import Config
-from .utils import Logger
+from .utils import Logger, build_headers
 
 
 class GiteeAPI:
@@ -16,10 +16,6 @@ class GiteeAPI:
         self.config = config
         self.token = token
         self.base_url = config.base_url
-
-    def _headers(self) -> Dict[str, str]:
-        """生成 API 请求头"""
-        return {"PRIVATE-TOKEN": self.token} if self.token else {}
 
     def get_latest_release(self, owner: str, repo: str) -> Optional[Dict[str, Any]]:
         """
@@ -34,7 +30,7 @@ class GiteeAPI:
         """
         url = f"{self.base_url}/repos/{owner}/{repo}/releases/latest"
         try:
-            resp = requests.get(url, headers=self._headers(), timeout=self.config.timeout)
+            resp = requests.get(url, headers=build_headers(self.token), timeout=self.config.timeout)
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.RequestException as e:
@@ -58,7 +54,7 @@ class GiteeAPI:
         encoded_tag = quote(tag, safe="")
         url = f"{self.base_url}/repos/{owner}/{repo}/releases/tags/{encoded_tag}"
         try:
-            resp = requests.get(url, headers=self._headers(), timeout=self.config.timeout)
+            resp = requests.get(url, headers=build_headers(self.token), timeout=self.config.timeout)
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.HTTPError as e:
@@ -87,7 +83,7 @@ class GiteeAPI:
         """
         url = f"{self.base_url}/repos/{owner}/{repo}/releases/{release_id}/attach_files"
         try:
-            resp = requests.get(url, headers=self._headers(), timeout=self.config.timeout)
+            resp = requests.get(url, headers=build_headers(self.token), timeout=self.config.timeout)
             resp.raise_for_status()
             return resp.json()
         except requests.exceptions.RequestException as e:

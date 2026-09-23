@@ -1,3 +1,0 @@
-nuitka
-ordered-set
-zstandard

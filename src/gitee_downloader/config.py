@@ -1,10 +1,11 @@
 """配置管理模块"""
 
-import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Set
+
+import yaml
 
 
 @dataclass
@@ -30,28 +31,13 @@ class Config:
     # 下载配置
     file_filter: str = "*"
     auto_extract: bool = True
-    auto_rename: bool = True
-
-    @classmethod
-    def from_args(cls, args) -> "Config":
-        """从命令行参数创建配置"""
-        config = cls()
-        if hasattr(args, 'owner') and args.owner:
-            config.default_owner = args.owner
-        if hasattr(args, 'repo') and args.repo:
-            config.default_repo = args.repo
-        if hasattr(args, 'output_dir') and args.output_dir:
-            config.default_output_dir = args.output_dir
-        if hasattr(args, 'file_filter') and args.file_filter:
-            config.file_filter = args.file_filter
-        return config
 
     @classmethod
     def from_file(cls, config_path: Path) -> "Config":
         """
         从配置文件加载配置
 
-        支持 YAML (.yml, .yaml) 和 JSON (.json) 格式
+        支持 YAML (.yml, .yaml) 格式
 
         Args:
             config_path: 配置文件路径
@@ -68,10 +54,8 @@ class Config:
 
         if suffix in (".yaml", ".yml"):
             data = cls._load_yaml(content)
-        elif suffix == ".json":
-            data = json.loads(content)
         else:
-            raise ValueError(f"不支持的配置文件格式: {suffix}，请使用 .yaml, .yml 或 .json")
+            raise ValueError(f"不支持的配置文件格式: {suffix}，请使用 .yaml, .yml")
 
         # 应用配置
         config._apply_dict(data)
@@ -80,13 +64,7 @@ class Config:
     @staticmethod
     def _load_yaml(content: str) -> Dict[str, Any]:
         """加载 YAML 内容"""
-        try:
-            import yaml
-            return yaml.safe_load(content) or {}
-        except ImportError:
-            raise ImportError(
-                "读取 YAML 配置文件需要 PyYAML 库，请安装: pip install pyyaml"
-            )
+        return yaml.safe_load(content) or {}
 
     def _apply_dict(self, data: Dict[str, Any]) -> None:
         """从字典应用配置"""
@@ -102,7 +80,6 @@ class Config:
             "chunk_size": "chunk_size",
             "file_filter": "file_filter",
             "auto_extract": "auto_extract",
-            "auto_rename": "auto_rename",
         }
 
         for config_key, attr_name in mappings.items():
@@ -111,7 +88,7 @@ class Config:
                 # 类型转换
                 if attr_name in ("timeout", "download_timeout", "chunk_size"):
                     value = int(value)
-                elif attr_name in ("auto_extract", "auto_rename"):
+                elif attr_name == "auto_extract":
                     value = self._parse_bool(value, config_key)
                 setattr(self, attr_name, value)
 
@@ -138,10 +115,8 @@ class Config:
         按优先级查找以下文件：
         1. gitee-downloader.yaml
         2. gitee-downloader.yml
-        3. gitee-downloader.json
-        4. .gitee-downloader.yaml
-        5. .gitee-downloader.yml
-        6. .gitee-downloader.json
+        3. .gitee-downloader.yaml
+        4. .gitee-downloader.yml
 
         Args:
             search_dir: 搜索目录，默认为当前工作目录
@@ -155,10 +130,8 @@ class Config:
         candidates = [
             "gitee-downloader.yaml",
             "gitee-downloader.yml",
-            "gitee-downloader.json",
             ".gitee-downloader.yaml",
             ".gitee-downloader.yml",
-            ".gitee-downloader.json",
         ]
 
         for name in candidates:
@@ -214,7 +187,6 @@ class Config:
             "chunk_size": self.chunk_size,
             "file_filter": self.file_filter,
             "auto_extract": self.auto_extract,
-            "auto_rename": self.auto_rename,
         }
 
     def save_to_file(self, config_path: Path, format: str = "yaml") -> None:
@@ -223,17 +195,13 @@ class Config:
 
         Args:
             config_path: 配置文件路径
-            format: 文件格式，"yaml" 或 "json"
+            format: 文件格式，"yaml" 或 "yml"
         """
         data = self.to_dict()
 
         if format in ("yaml", "yml"):
-            try:
-                import yaml
-                content = yaml.dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False)
-            except ImportError:
-                raise ImportError("保存 YAML 配置文件需要 PyYAML 库，请安装: pip install pyyaml")
+            content = yaml.dump(data, default_flow_style=False, allow_unicode=True, sort_keys=False)
         else:
-            content = json.dumps(data, indent=2, ensure_ascii=False)
+            raise ValueError(f"不支持的配置文件格式: {format}，请使用 yaml 或 yml")
 
         config_path.write_text(content, encoding="utf-8")
