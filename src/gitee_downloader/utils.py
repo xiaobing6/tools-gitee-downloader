@@ -22,20 +22,6 @@ def setup_windows_encoding() -> None:
 _ANSI_ESCAPE_RE = re.compile(r"\033\[[0-9;]*m")
 
 
-def visible_width(text: str) -> int:
-    """计算字符串在终端中的可见宽度（去除 ANSI 转义码）"""
-    clean = _ANSI_ESCAPE_RE.sub("", text)
-    width = 0
-    for char in clean:
-        if unicodedata.combining(char):
-            continue
-        if unicodedata.east_asian_width(char) in ("F", "W"):
-            width += 2
-        else:
-            width += 1
-    return width
-
-
 def _char_width(char: str) -> int:
     """计算单个字符的终端显示宽度。"""
     if unicodedata.combining(char):

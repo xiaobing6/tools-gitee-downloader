@@ -8,7 +8,6 @@ from gitee_downloader.utils import (
     build_headers,
     format_file_size,
     is_already_downloaded,
-    visible_width,
 )
 
 
@@ -42,15 +41,6 @@ def test_is_already_downloaded(tmp_path: Path) -> None:
     assert is_already_downloaded(missing) is False
     assert is_already_downloaded(empty) is False
     assert is_already_downloaded(real) is True
-
-
-def test_visible_width_cjk() -> None:
-    """CJK 与全角字符按 2 列计算，ASCII 按 1 列"""
-    assert visible_width("abc") == 3
-    assert visible_width("中文") == 4
-    assert visible_width("a中b") == 4
-    assert visible_width("\033[36mcyan\033[0m") == 4
-    assert visible_width("") == 0
 
 
 def test_build_headers() -> None:

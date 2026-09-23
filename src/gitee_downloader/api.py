@@ -1,5 +1,6 @@
 """Gitee API 封装模块"""
 
+import fnmatch
 from typing import Dict, List, Optional, Any
 from urllib.parse import quote
 
@@ -151,8 +152,6 @@ class ReleaseManager:
         Returns:
             过滤后的附件列表
         """
-        import fnmatch
-
         attachments = self.api.get_release_attachments(owner, repo, release_id)
         if attachments is None:
             return []

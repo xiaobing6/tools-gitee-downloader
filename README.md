@@ -103,4 +103,4 @@ uv run python -m compileall -q src tests
 uv run gitee-downloader --help
 ```
 
-项目使用 `.editorconfig` 和 `.gitattributes` 约束 UTF-8、默认 LF、bat 文件 CRLF 和 4 空格缩进，避免中文文档和终端说明在不同编辑器里被保存成错误编码。代码代理维护约定见 `AGENTS.md`。
+项目使用 `.editorconfig` 和 `.gitattributes` 约束 UTF-8、默认 LF 和 4 空格缩进，避免中文文档和终端说明在不同编辑器里被保存成错误编码。代码代理维护约定见 `AGENTS.md`。
