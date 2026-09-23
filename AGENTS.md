@@ -46,17 +46,13 @@ src/gitee_downloader/__main__.py
 
 ## 关键约定
 
-- 真实 token 不应写入代码、文档或可提交配置。
-- `gitee-downloader.yaml` 是本地私有配置文件，必须保持 Git 忽略。
-- `gitee-downloader.example.yaml` 是可提交示例，只能使用 `YOUR_GITEE_TOKEN` 占位符。
-- `Config.get_token()` 必须把 `YOUR_GITEE_TOKEN` 当作未配置处理。
-- token 优先级：命令行参数 > 环境变量 `GITEE_TOKEN` > 配置文件 > 空字符串。
-- 配置只支持 YAML；`auto_rename` 配置链已删除，重命名由 `PostProcessor` 无条件执行。
-- `downloads/`、`dist/`、`.uploads/`、`__pycache__/`、`*.part` 都是本地产物，不应提交。
-- 文本文件默认使用 UTF-8 + LF；换行规则见 `.gitattributes`。
+- 真实 token 不得写入代码、文档或可提交文件。`gitee-downloader.yaml` 是本地私有配置（已被 `.gitignore` 忽略）；`gitee-downloader.example.yaml` 只使用 `YOUR_GITEE_TOKEN` 占位符，且 `Config.get_token()` 必须把占位符当作未配置处理。
+- token 优先级：命令行参数 > 环境变量 `GITEE_TOKEN` > 配置文件 > 空字符串（已有测试锁定，改动时同步测试）。
+- 配置只支持 YAML；重命名由 `PostProcessor` 无条件执行，没有配置开关。
 - 新增解压格式时必须保留路径安全校验，不能直接使用 `extractall()`。
-- 修改终端输出时，需要考虑 Windows Terminal、PowerShell、GBK 控制台和 emoji 兼容。
+- 修改终端输出时需考虑 Windows Terminal、PowerShell、GBK 控制台和 emoji 兼容，降级处理参考 `Logger._print` 和 `ProgressBar`。
 - `tests/` 只写纯逻辑测试，不得发起网络请求。
+- 本地产物（`downloads/`、`dist/`、`*.part` 等）不提交，忽略规则见 `.gitignore`。
 
 ## 常用检查
 
