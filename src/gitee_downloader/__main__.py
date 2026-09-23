@@ -21,6 +21,7 @@ from gitee_downloader.utils import setup_windows_encoding, Logger
 def parse_arguments() -> argparse.Namespace:
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
+        prog="gitee-downloader",
         description="从 Gitee 仓库 Release 下载最新版本安装包",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
