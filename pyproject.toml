@@ -1,0 +1,27 @@
+[project]
+name = "gitee-downloader"
+version = "2.0.0"
+description = "从 Gitee 仓库 Release 中下载附件，并按需解压、重命名。"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "requests",
+    "pyyaml",
+]
+
+[project.scripts]
+gitee-downloader = "gitee_downloader.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ruff.lint]
+# 固定 ruff 默认规则集，避免工具版本升级后默认集扩大误报历史代码风格
+select = ["E4", "E7", "E9", "F"]

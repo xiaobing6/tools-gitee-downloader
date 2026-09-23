@@ -4,15 +4,12 @@ Gitee Release 自动下载工具
 
 从 Gitee 指定仓库的 Release 记录中下载最新版本的安装包
 
-支持配置文件：gitee-downloader.yaml / gitee-downloader.json
+支持配置文件：gitee-downloader.yaml / gitee-downloader.yml
 """
 
 import argparse
 import sys
 from pathlib import Path
-
-# 添加当前目录到路径，支持直接运行
-sys.path.insert(0, str(Path(__file__).parent))
 
 from gitee_downloader.config import Config
 from gitee_downloader.api import GiteeAPI, ReleaseManager
@@ -21,53 +18,41 @@ from gitee_downloader.extractor import PostProcessor
 from gitee_downloader.utils import setup_windows_encoding, Logger
 
 
-def command_example() -> str:
-    """Return the command shown in help examples for source or exe runs."""
-    program_path = Path(sys.argv[0])
-    if program_path.suffix.lower() == ".exe":
-        try:
-            rel_path = program_path.resolve().relative_to(Path.cwd().resolve())
-            return f".\\{rel_path}"
-        except ValueError:
-            return f".\\{program_path.name}"
-    return "python main.py"
-
-
 def parse_arguments() -> argparse.Namespace:
     """解析命令行参数"""
-    cmd = command_example()
     parser = argparse.ArgumentParser(
+        prog="gitee-downloader",
         description="从 Gitee 仓库 Release 下载最新版本安装包",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=f"""
+        epilog="""
 示例:
   # 首次使用：生成本地配置文件
-  {cmd} --init-config
+  gitee-downloader --init-config
 
   # 编辑 gitee-downloader.yaml，将 YOUR_GITEE_TOKEN 替换为真实 token 后运行
-  {cmd}
+  gitee-downloader
 
   # 使用配置文件
-  {cmd} --config gitee-downloader.yaml
+  gitee-downloader --config gitee-downloader.yaml
 
   # 下载指定文件类型
-  {cmd} --file-filter "*.tar.gz"
+  gitee-downloader --file-filter "*.tar.gz"
 
   # 指定版本 tag
-  {cmd} --tag v0.9.156
+  gitee-downloader --tag v0.9.156
 
   # 指定下载目录
-  {cmd} --output-dir ./packages
+  gitee-downloader --output-dir ./packages
 
   # 指定其他仓库
-  {cmd} --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
+  gitee-downloader --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
         """,
     )
 
     parser.add_argument(
         "--config",
         default=None,
-        help="配置文件路径 (支持 .yaml, .yml, .json)",
+        help="配置文件路径 (支持 .yaml, .yml)",
     )
     parser.add_argument(
         "--init-config",
@@ -131,8 +116,7 @@ def load_config(args) -> Config:
     加载配置，优先级：
     1. 命令行参数 --config 指定的配置文件
     2. 自动查找默认配置文件
-    3. 命令行参数直接指定
-    4. 内置非敏感默认值
+    3. 内置非敏感默认值
     """
     # 1. 如果指定了 --config，使用指定文件
     if args.config:
@@ -149,8 +133,8 @@ def load_config(args) -> Config:
         Logger.info(str(auto_config), Logger.ICON_CONFIG)
         return Config.from_file(auto_config)
 
-    # 3. 从命令行参数创建
-    return Config.from_args(args)
+    # 3. 使用内置默认值
+    return Config()
 
 
 def merge_config_with_args(config: Config, args) -> Config:
@@ -182,7 +166,6 @@ def main() -> int:
     if args.init_config:
         init_config_file()
         return 0
-
     # 加载配置
     config = load_config(args)
     config = merge_config_with_args(config, args)

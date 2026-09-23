@@ -8,4 +8,3 @@ download_timeout: 60
 chunk_size: 8192
 file_filter: "*"
 auto_extract: true
-auto_rename: true

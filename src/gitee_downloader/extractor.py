@@ -110,7 +110,7 @@ class ArchiveExtractor:
         return True
 
     def extract(
-        self, archive_path: Path, output_dir: Path, skip_existing: bool = True
+        self, archive_path: Path, output_dir: Path
     ) -> Optional[Path]:
         """
         解压压缩包
@@ -118,7 +118,6 @@ class ArchiveExtractor:
         Args:
             archive_path: 压缩包路径
             output_dir: 输出目录
-            skip_existing: 是否跳过已解压的压缩包
 
         Returns:
             解压后的目录路径，失败返回 None
@@ -129,11 +128,6 @@ class ArchiveExtractor:
             return None
 
         target_dir = output_dir / base_name
-
-        # 检查是否已解压
-        if skip_existing and self.is_already_extracted(target_dir, archive_path):
-            Logger.skip(f"{base_name} 已解压，跳过")
-            return target_dir
 
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -347,9 +341,7 @@ class PostProcessor:
             self.renamer.rename_files(target_dir)
             return target_dir
 
-        extract_dir = self.extractor.extract(
-            archive_path, output_dir, skip_existing=False
-        )
+        extract_dir = self.extractor.extract(archive_path, output_dir)
 
         if extract_dir:
             Logger.success_item(base_name)

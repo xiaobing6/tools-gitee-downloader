@@ -1,11 +1,11 @@
 """工具函数模块"""
 
-import os
 import re
 import sys
 import time
 import unicodedata
 from pathlib import Path
+from typing import Dict
 
 
 def setup_windows_encoding() -> None:
@@ -20,20 +20,6 @@ def setup_windows_encoding() -> None:
 
 # 匹配 ANSI 转义码的正则
 _ANSI_ESCAPE_RE = re.compile(r"\033\[[0-9;]*m")
-
-
-def visible_width(text: str) -> int:
-    """计算字符串在终端中的可见宽度（去除 ANSI 转义码）"""
-    clean = _ANSI_ESCAPE_RE.sub("", text)
-    width = 0
-    for char in clean:
-        if unicodedata.combining(char):
-            continue
-        if unicodedata.east_asian_width(char) in ("F", "W"):
-            width += 2
-        else:
-            width += 1
-    return width
 
 
 def _char_width(char: str) -> int:
@@ -92,6 +78,11 @@ def format_file_size(size_bytes: int) -> str:
         value /= 1024
 
 
+def build_headers(token: str) -> Dict[str, str]:
+    """生成 API / 下载请求头"""
+    return {"PRIVATE-TOKEN": token} if token else {}
+
+
 class Logger:
     """美化版日志记录器"""
 
@@ -107,9 +98,6 @@ class Logger:
     # 丰富的 Unicode 图标
     ICON_CONFIG = "⚙"      # 配置
     ICON_FETCH = "📡"      # 获取
-    ICON_FILE = "📦"       # 文件/附件
-    ICON_DOWNLOAD = "⬇"    # 下载
-    ICON_EXTRACT = "📂"    # 解压
     ICON_RENAME = "✏"     # 重命名
     ICON_SUCCESS = "✔"     # 成功
     ICON_SKIP = "-"       # 跳过
@@ -141,11 +129,6 @@ class Logger:
     def step(message: str) -> None:
         """阶段分隔线"""
         Logger._print(f"{Logger.GRAY}━━ {message}{Logger.RESET}")
-
-    @staticmethod
-    def highlight(message: str) -> None:
-        """关键信息高亮（青色）"""
-        Logger._print(f"{Logger.CYAN}{message}{Logger.RESET}")
 
     @staticmethod
     def path(message: str) -> None:
@@ -195,6 +178,11 @@ class Logger:
 class ProgressBar:
     """终端下载进度条"""
 
+    # 进度条格数（固定单档布局）
+    BAR_WIDTH = 20
+    # 文件名截断宽度
+    NAME_WIDTH = 40
+
     def __init__(self, filename: str, total_size: int = 0):
         """
         Args:
@@ -206,8 +194,6 @@ class ProgressBar:
         self.downloaded = 0
         self.start_time = time.time()
         self.last_print_time = 0
-        # 进度条宽度（不含前后缀）
-        self.bar_width = 30
 
     def update(self, chunk_size: int) -> None:
         """更新已下载字节数"""
@@ -230,16 +216,10 @@ class ProgressBar:
         elapsed = time.time() - self.start_time
         speed = self.downloaded / elapsed if elapsed > 0 else 0
 
-        # 获取终端宽度
-        try:
-            term_width = os.get_terminal_size().columns
-        except Exception:
-            term_width = 80
-
         RESET = "\033[0m"
         GRAY = "\033[90m"
 
-        # 百分比
+        # 百分比和大小
         if self.total_size > 0:
             percent = min(self.downloaded / self.total_size, 1.0)
             percent_str = f"{int(percent * 100)}"
@@ -266,46 +246,10 @@ class ProgressBar:
         else:
             bar_color = GRAY
 
-        # 根据窗口宽度决定布局
-        # 最小行格式: "100% | 2.3 MB" = 约14字符
-        # 加上进度条(8~20)和空格
-        if term_width <= 50:
-            # 极简模式：无文件名，8格进度条，无时间
-            bar_width = 8
-            show_time = False
-            show_speed = False
-            name_space = 0
-        elif term_width <= 70:
-            # 简洁模式：无文件名，12格进度条，有时间
-            bar_width = 12
-            show_time = True
-            show_speed = True
-            name_space = 0
-        elif term_width <= 120:
-            # 标准模式：有截断文件名，12格进度条
-            bar_width = 12
-            show_time = True
-            show_speed = True
-            # 文件名空间 = 总宽度 - 进度条 - 固定信息
-            # 格式: "xxx... [████████████] 100% | 2.3 MB | 841.0 KB/s | 2.8s"
-            fixed = 6 + bar_width + 1 + len(percent_str) + 1 + len(size_str) + 3 + len(speed_display) + 3 + len(elapsed_str)
-            name_space = term_width - fixed - 8
-        else:
-            # 宽屏模式：完整文件名，20格进度条
-            bar_width = 20
-            show_time = True
-            show_speed = True
-            fixed = 6 + bar_width + 1 + len(percent_str) + 1 + len(size_str) + 3 + len(speed_display) + 3 + len(elapsed_str)
-            name_space = term_width - fixed - 8
-
-        # 智能截断文件名
-        if name_space > 0:
-            if visible_width(self.filename) > name_space:
-                display_name = truncate_visible(self.filename, max(name_space - 3, 0)) + "..."
-            else:
-                display_name = self.filename
-        else:
-            display_name = ""
+        # 文件名截断到固定宽度
+        display_name = truncate_visible(self.filename, self.NAME_WIDTH)
+        if len(self.filename) > len(display_name):
+            display_name += "..."
 
         # 生成进度条
         filled_char = "█"
@@ -316,28 +260,14 @@ class ProgressBar:
             filled_char = "#"
             empty_char = "-"
 
-        filled = int(bar_width * percent) if self.total_size > 0 else 0
-        bar = f"{bar_color}{filled_char * filled}{GRAY}{empty_char * (bar_width - filled)}{RESET}"
+        filled = int(self.BAR_WIDTH * percent) if self.total_size > 0 else 0
+        bar = f"{bar_color}{filled_char * filled}{GRAY}{empty_char * (self.BAR_WIDTH - filled)}{RESET}"
 
-        stats = [f"{percent_str.rjust(3)}%", size_str]
-        if show_speed:
-            stats.append(speed_display)
-        if show_time:
-            stats.append(elapsed_str)
+        stats = [f"{percent_str.rjust(3)}%", size_str, speed_display, elapsed_str]
         stats_text = f" {GRAY}|{RESET} ".join(stats)
 
         # 组装行
-        if display_name:
-            line = f"{display_name} [{bar}] {stats_text}"
-        else:
-            line = f"[{bar}] {stats_text}"
-
-        # 确保行宽度正确
-        vis_w = visible_width(line)
-        if vis_w < term_width:
-            line += " " * (term_width - vis_w)
-        elif vis_w > term_width:
-            line = truncate_visible(line, term_width)
+        line = f"{display_name} [{bar}] {stats_text}"
 
         try:
             sys.stdout.write(f"\r{line}")
