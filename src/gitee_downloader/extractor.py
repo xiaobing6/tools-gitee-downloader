@@ -301,7 +301,7 @@ class FileRenamer:
             return None
 
         base = match.group(1).lower().replace("_", "-")  # icp-monitoring
-        ext = match.group(2)  # 如 .exe 或 _xxx 等残留部分
+        ext = match.group(2)  # 版本号/平台信息之后的残留部分，通常是扩展名
         return base + ext if ext else base
 
 

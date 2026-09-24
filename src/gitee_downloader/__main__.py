@@ -86,7 +86,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--file-filter",
         default=None,
-        help="文件名过滤模式，如 *.exe (默认: *)",
+        help="文件名过滤模式，如 *.tar.gz (默认: *)",
     )
     parser.add_argument(
         "--tag",
