@@ -11,6 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from gitee_downloader import __version__
 from gitee_downloader.config import Config
 from gitee_downloader.api import GiteeAPI, ReleaseManager
 from gitee_downloader.downloader import FileDownloader, BatchDownloader
@@ -28,6 +29,9 @@ def parse_arguments() -> argparse.Namespace:
 示例:
   # 首次使用：生成本地配置文件
   gitee-downloader --init-config
+
+  # 查看版本
+  gitee-downloader --version
 
   # 编辑 gitee-downloader.yaml，将 YOUR_GITEE_TOKEN 替换为真实 token 后运行
   gitee-downloader
@@ -88,6 +92,11 @@ def parse_arguments() -> argparse.Namespace:
         "--tag",
         default=None,
         help="指定版本 tag（不指定则取最新）",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
 
     return parser.parse_args()
