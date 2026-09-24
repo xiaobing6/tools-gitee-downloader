@@ -5,7 +5,7 @@ import sys
 import time
 import unicodedata
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 
 def setup_windows_encoding() -> None:
@@ -69,13 +69,13 @@ def format_file_size(size_bytes: int) -> str:
         raise ValueError("size_bytes must be non-negative")
 
     value = float(size_bytes)
-    units = ("B", "KB", "MB", "GB", "TB")
-    for unit in units:
-        if value < 1024 or unit == units[-1]:
+    for unit in ("B", "KB", "MB", "GB"):
+        if value < 1024:
             if unit == "B":
                 return f"{int(value)} B"
             return f"{value:.1f} {unit}"
         value /= 1024
+    return f"{value:.1f} TB"
 
 
 def build_headers(token: str) -> Dict[str, str]:
@@ -120,7 +120,7 @@ class Logger:
             stream.flush()
 
     @staticmethod
-    def info(message: str, icon: str = None) -> None:
+    def info(message: str, icon: Optional[str] = None) -> None:
         """操作提示（深灰色）"""
         icon = icon or Logger.ICON_FETCH
         Logger._print(f"{Logger.GRAY}{icon} {message}{Logger.RESET}")
@@ -164,7 +164,7 @@ class Logger:
         )
 
     @staticmethod
-    def success_item(name: str, detail: str = None) -> None:
+    def success_item(name: str, detail: Optional[str] = None) -> None:
         """成功处理单个项目。"""
         suffix = f" {Logger.GRAY}({detail}){Logger.RESET}" if detail else ""
         Logger._print(f"{Logger.GREEN}{Logger.ICON_SUCCESS}{Logger.RESET} {Logger.CYAN}{name}{Logger.RESET}{suffix}")
@@ -193,7 +193,7 @@ class ProgressBar:
         self.total_size = total_size
         self.downloaded = 0
         self.start_time = time.time()
-        self.last_print_time = 0
+        self.last_print_time = 0.0
 
     def update(self, chunk_size: int) -> None:
         """更新已下载字节数"""

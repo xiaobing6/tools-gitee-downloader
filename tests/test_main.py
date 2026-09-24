@@ -54,6 +54,19 @@ def test_parse_arguments_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
     assert args.tag == "v1.0.0"
 
 
+def test_version_flag_prints_version(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """--version 输出版本号并以退出码 0 结束"""
+    monkeypatch.setattr(sys, "argv", ["gitee-downloader", "--version"])
+
+    with pytest.raises(SystemExit) as exc_info:
+        parse_arguments()
+
+    assert exc_info.value.code == 0
+    assert "gitee-downloader 2.0.0" in capsys.readouterr().out
+
+
 def test_help_examples_use_console_script() -> None:
     """帮助文本示例统一使用 gitee-downloader，不再出现 python main.py 和 exe 分支"""
     import gitee_downloader.__main__ as entry

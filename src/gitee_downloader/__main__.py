@@ -11,6 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from gitee_downloader import __version__
 from gitee_downloader.config import Config
 from gitee_downloader.api import GiteeAPI, ReleaseManager
 from gitee_downloader.downloader import FileDownloader, BatchDownloader
@@ -28,6 +29,9 @@ def parse_arguments() -> argparse.Namespace:
 示例:
   # 首次使用：生成本地配置文件
   gitee-downloader --init-config
+
+  # 查看版本
+  gitee-downloader --version
 
   # 编辑 gitee-downloader.yaml，将 YOUR_GITEE_TOKEN 替换为真实 token 后运行
   gitee-downloader
@@ -82,12 +86,17 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--file-filter",
         default=None,
-        help="文件名过滤模式，如 *.exe (默认: *)",
+        help="文件名过滤模式，如 *.tar.gz (默认: *)",
     )
     parser.add_argument(
         "--tag",
         default=None,
         help="指定版本 tag（不指定则取最新）",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
 
     return parser.parse_args()
@@ -196,6 +205,9 @@ def main() -> int:
         return 1
 
     release_id = target_release.get("id")
+    if release_id is None:
+        Logger.error("release 信息中缺少 id，无法继续")
+        return 1
     tag_name = target_release.get("tag_name", "unknown")
     print()
     print(
@@ -230,6 +242,9 @@ def main() -> int:
     for att in attachments:
         name = att.get("name", "unknown")
         att_id = att.get("id")
+        if att_id is None:
+            Logger.warning(f"附件 {name} 缺少 id，跳过")
+            continue
         download_url = api.get_download_url(
             config.default_owner, config.default_repo, release_id, att_id
         )

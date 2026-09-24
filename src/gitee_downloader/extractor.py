@@ -5,7 +5,7 @@ import shutil
 import tarfile
 import zipfile
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from .utils import Logger
 
@@ -191,13 +191,12 @@ class ArchiveExtractor:
 
     def _extract_tar(self, archive_path: Path, target_dir: Path) -> None:
         """解压 TAR 文件（支持 .tar.gz, .tar.bz2），自动展平单层顶层目录"""
-        # 确定打开模式
+        # 确定打开模式（字面量类型便于静态检查匹配 tarfile.open 重载）
+        mode: Literal["r:gz", "r:bz2", "r"] = "r"
         if archive_path.name.endswith(".tar.gz"):
             mode = "r:gz"
         elif archive_path.name.endswith(".tar.bz2"):
             mode = "r:bz2"
-        else:
-            mode = "r"
 
         with tarfile.open(archive_path, mode) as tf:
             members = [m for m in tf.getmembers() if m.name]
@@ -302,7 +301,7 @@ class FileRenamer:
             return None
 
         base = match.group(1).lower().replace("_", "-")  # icp-monitoring
-        ext = match.group(2)  # 如 .exe 或 _xxx 等残留部分
+        ext = match.group(2)  # 版本号/平台信息之后的残留部分，通常是扩展名
         return base + ext if ext else base
 
 
