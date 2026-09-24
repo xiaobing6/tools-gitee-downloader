@@ -108,7 +108,7 @@ class Config:
         raise ValueError(f"配置项 {config_key} 需要布尔值，当前值: {value!r}")
 
     @classmethod
-    def find_config_file(cls, search_dir: Path = None) -> Optional[Path]:
+    def find_config_file(cls, search_dir: Optional[Path] = None) -> Optional[Path]:
         """
         自动查找配置文件
 

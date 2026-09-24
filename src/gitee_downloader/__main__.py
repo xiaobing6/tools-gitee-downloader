@@ -196,6 +196,9 @@ def main() -> int:
         return 1
 
     release_id = target_release.get("id")
+    if release_id is None:
+        Logger.error("release 信息中缺少 id，无法继续")
+        return 1
     tag_name = target_release.get("tag_name", "unknown")
     print()
     print(
@@ -230,6 +233,9 @@ def main() -> int:
     for att in attachments:
         name = att.get("name", "unknown")
         att_id = att.get("id")
+        if att_id is None:
+            Logger.warning(f"附件 {name} 缺少 id，跳过")
+            continue
         download_url = api.get_download_url(
             config.default_owner, config.default_repo, release_id, att_id
         )

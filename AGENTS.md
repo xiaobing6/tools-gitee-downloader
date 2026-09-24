@@ -8,7 +8,7 @@
 - 当前版本：`2.0.0`，见 `src/gitee_downloader/__init__.py`。
 - 用途：从 Gitee 指定仓库的 Release 记录中下载附件，并按需解压、重命名。
 - 依赖管理使用 `uv`：运行依赖在 `pyproject.toml` 的 `dependencies`（`requests`、`pyyaml`），锁定在 `uv.lock`，环境由 `uv sync` 创建。
-- 开发依赖分组 `[dependency-groups] dev` 现有 `pytest`、`ruff`。除这两者外不引入 `click`、`typer`、`rich`、`mypy` 等额外工程依赖，除非用户明确要求。
+- 开发依赖分组 `[dependency-groups] dev` 现有 `pytest`、`ruff`、`mypy`。除这三者外不引入 `click`、`typer`、`rich` 等额外工程依赖，除非用户明确要求。
 
 ## 文件索引
 
@@ -60,7 +60,7 @@ src/gitee_downloader/__main__.py
 uv sync
 uv run pytest -q
 uv run ruff check .
-uv run python -m compileall -q src tests
+uv run mypy src tests
 uv run gitee-downloader --help
 git status -sb --ignored
 git check-ignore -v gitee-downloader.yaml

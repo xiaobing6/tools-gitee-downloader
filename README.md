@@ -99,7 +99,7 @@ Token 优先级：
 uv sync
 uv run pytest -q
 uv run ruff check .
-uv run python -m compileall -q src tests
+uv run mypy src tests
 uv run gitee-downloader --help
 ```
 
