@@ -12,42 +12,66 @@
 - 安全解压 ZIP/TAR，避免压缩包路径逃逸目标目录。
 - Windows 终端下处理中文、颜色和进度条显示兼容。
 
-## 使用
+## 安装
 
-本项目使用 [uv](https://docs.astral.sh/uv/) 管理依赖，需要 Python 3.12：
+### 方式一：安装为命令行工具（推荐）
+
+无需克隆源码，一条命令即可安装（需要先安装 [uv](https://docs.astral.sh/uv/)）：
 
 ```powershell
+uv tool install git+https://github.com/xiaobing6/tools-gitee-downloader.git
+```
+
+安装后任意目录下可直接使用 `gitee-downloader` 命令。升级到最新版：
+
+```powershell
+uv tool upgrade gitee-downloader
+```
+
+也可以钉特定版本安装（仓库需存在对应 tag，例如 `v2.0.0`）：
+
+```powershell
+uv tool install git+https://github.com/xiaobing6/tools-gitee-downloader.git@v2.0.0
+```
+
+### 方式二：从源码运行（开发者）
+
+```powershell
+git clone https://github.com/xiaobing6/tools-gitee-downloader.git
+cd tools-gitee-downloader
 uv sync
 ```
+
+源码方式下，下文所有 `gitee-downloader` 命令请替换为 `uv run gitee-downloader`。
+
+## 使用
 
 首次使用建议先生成本地配置文件，并填写自己的 Gitee token：
 
 ```powershell
-uv run gitee-downloader --help
-uv run gitee-downloader --init-config
+gitee-downloader --help
+gitee-downloader --init-config
 # 编辑 gitee-downloader.yaml，把 YOUR_GITEE_TOKEN 替换为真实 token
-uv run gitee-downloader
+gitee-downloader
 ```
 
 也可以使用环境变量提供 token：
 
 ```powershell
 $env:GITEE_TOKEN="your-token"
-uv run gitee-downloader
+gitee-downloader
 ```
 
 常用命令：
 
 ```powershell
-uv run gitee-downloader
-uv run gitee-downloader --config gitee-downloader.yaml
-uv run gitee-downloader --tag v0.9.164
-uv run gitee-downloader --file-filter "*.tar.gz"
-uv run gitee-downloader --output-dir ./packages
-uv run gitee-downloader --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
+gitee-downloader
+gitee-downloader --config gitee-downloader.yaml
+gitee-downloader --tag v0.9.164
+gitee-downloader --file-filter "*.tar.gz"
+gitee-downloader --output-dir ./packages
+gitee-downloader --owner other-user --repo other-repo --token YOUR_GITEE_TOKEN
 ```
-
-安装为命令行工具后，也可以直接使用 `gitee-downloader` 命令，效果与 `uv run gitee-downloader` 一致。
 
 ## 配置
 
